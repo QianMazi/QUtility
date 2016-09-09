@@ -4,8 +4,8 @@
 \alias{rollingPerformance}
 \title{rollingPerformance}
 \usage{
-rollingPerformance(rtn, FUN = "Return.annualized", width = 365, by = 30,
-  align = "right", ...)
+rollingPerformance(rtn, FUN = "PerformanceAnalytics::Return.annualized",
+  width = 365, by = 30, align = "right", ...)
 }
 \arguments{
 \item{rtn}{an xts, vector, matrix, data frame, timeSeries or zoo object of asset returns}

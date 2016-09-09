@@ -105,7 +105,7 @@ check.name_exist <- function(obj){
 #' rptDate.is(ymd(c(20100103,20141231,20130630)))
 #' rptDate.is(ymd(c(20100630,20141231,20130930)))
 rptDate.is <- function(rptDate){
-  md <- 100*month(rptDate) + day(rptDate)
+  md <- 100*lubridate::month(rptDate) + lubridate::day(rptDate)
   re <- md %in% c(331,630,930,1231)
   return(re)
 }
@@ -137,10 +137,10 @@ check.rptDate <- function(rptDate){
 #' @export
 #' @author Ruifei.Yin
 #' @examples
-#' rptDate.yoy(ymd(c(20100630,20141231,20130930)))
+#' rptDate.yoy(lubridate::ymd(c(20100630,20141231,20130930)))
 rptDate.yoy <- function(rptDate){
   check.rptDate(rptDate)
-  re <- rptDate - years(1)
+  re <- rptDate - lubridate::years(1)
   re <- as.Date(re,tz="")
   return(re)
 }
@@ -149,14 +149,13 @@ rptDate.yoy <- function(rptDate){
 #' @param rptDate a vector of rptDate , with class Date.
 #' @return a vector of qoq rptDate.
 #' @export
-#' @importFrom lubridate %m-%
 #' @author Ruifei.Yin
 #' @examples
-#' rptDate.yoy(ymd(c(20100630,20141231,20130930)))
+#' rptDate.qoq(lubridate::ymd(c(20100630,20141231,20130930)))
 rptDate.qoq <- function(rptDate){
   check.rptDate(rptDate)
   re <- rptDate %m-% months(3)
-  re <- ceiling_date(re,unit="month") - days(1)
+  re <- lubridate::ceiling_date(re,unit="month") - lubridate::days(1)
   re <- as.Date(re,tz="")
   return(re)
 }
@@ -166,14 +165,13 @@ rptDate.qoq <- function(rptDate){
 #' @param rptDate a vector of rptDate, with class Date.
 #' @return a vector of Date
 #' @export
-#' @importFrom lubridate year
 #' @author Ruifei.Yin
 #' @examples
 #' rptDate.deadline(ymd(c(20100630,20141231,20130930)))
 rptDate.deadline <- function(rptDate){
   check.rptDate(rptDate)
-  q <- quarter(rptDate)
-  y <- year(rptDate)  
+  q <- lubridate::quarter(rptDate)
+  y <- lubridate::year(rptDate)  
   re <- ISOdate(y,4,30,tz="")
   re[q==2] <- ISOdate(y[q==2], 8, 31, tz="")
   re[q==3] <- ISOdate(y[q==3], 10, 31, tz="")
@@ -322,15 +320,13 @@ hitRatio <- function(rtn,satisfied=0){
 #' @return IF verbose is FALSE, return a return series of the portfolio, else, return a list with items:
 #'   \itemize{ 
 #'   \item rtn: a time series of the portfolio return.
-#'   \item wgt_EOP: End of Period (BOP) Weight for each asset, with dims of \code{c(nrow(R), ncol(weights)+1) .
-#'   \item wgt_BOP: Beginning of Period (BOP) Weight for each asset, with dims of \code{c(nrow(R), ncol(weights)+1) .
-#'   \item contritution: The per period contribution to portfolio return of each asset, with dims of \code{c(nrow(R), ncol(weights)+1)
+#'   \item wgt_EOP: End of Period (BOP) Weight for each asset, with dims of \code{c(nrow(R), ncol(weights)+1)} .
+#'   \item wgt_BOP: Beginning of Period (BOP) Weight for each asset, with dims of \code{c(nrow(R), ncol(weights)+1)} .
+#'   \item contritution: The per period contribution to portfolio return of each asset, with dims of \code{c(nrow(R), ncol(weights)+1)}
 #'   \item weights: weights
-#'   \item rebtrade: a time series of the rebalancing trading of each asset, with dims of \code{c(nrow(weights), ncol(weights)+1), a  positive element means buying,and vice versa.
+#'   \item rebtrade: a time series of the rebalancing trading of each asset, with dims of \code{c(nrow(weights), ncol(weights)+1)}, a  positive element means buying,and vice versa.
 #'   }
 #' @seealso \code{\link[PerformanceAnalytics]{Return.portfolio}}
-#' @importFrom xts reclass try.xts first last endpoints
-#' @importFrom zoo coredata coredata<-
 #' @author Ruifei.yin
 #' @export
 #' @examples
@@ -364,7 +360,7 @@ Return.rebalancing_yrf <- function(R,
                                    warning.wgtsum=TRUE){
   
   # --- check the retrun data 
-  R = checkData(R, method = "xts")
+  R = PerformanceAnalytics::checkData(R, method = "xts")
   if (!nrow(R) >= 1) {
     stop("no data passed for R(eturns)")
   }
@@ -375,7 +371,7 @@ Return.rebalancing_yrf <- function(R,
   
   # ---- check the weights data
   rebalance_on = rebFreq
-  freq = periodicity(R)
+  freq = xts::periodicity(R)
   switch(freq$scale, seconds = {
     stop("Use a returns series of daily frequency or higher.")
   }, minute = {
@@ -394,9 +390,9 @@ Return.rebalancing_yrf <- function(R,
     time_unit = "year"
   })
   if (time_unit == "quarter") {
-    start_date = as.yearqtr(seq(as.Date(index(R)[1]), length = 2,by = paste("-3", "month"))[2])
+    start_date = zoo::as.yearqtr(seq(as.Date(zoo::index(R)[1]), length = 2,by = paste("-3", "month"))[2])
   }  else {
-    start_date = seq(as.Date(index(R)[1]), length = 2, by = paste("-1",   time_unit))[2]
+    start_date = seq(as.Date(zoo::index(R)[1]), length = 2, by = paste("-1",   time_unit))[2]
   }
   if (is.null(weights)) {
     weights = rep(1/NCOL(R), NCOL(R))
@@ -406,12 +402,12 @@ Return.rebalancing_yrf <- function(R,
     if (is.na(rebalance_on)) { # no rebalance
       weights = xts(matrix(weights, nrow = 1), order.by = as.Date(start_date))
     } else { # rebalance on rebFreq
-      weight_dates = c(as.Date(start_date), index(R[endpoints(R, on = rebalance_on)]))
+      weight_dates = c(as.Date(start_date), zoo::index(R[xts::endpoints(R, on = rebalance_on)]))
       weights = xts(matrix(rep(weights, length(weight_dates)),ncol = NCOL(R), byrow = TRUE), order.by = as.Date(weight_dates))
     }
     colnames(weights) = colnames(R)
   } else { # rebalance on weights series
-    weights = checkData(weights, method = "xts")
+    weights = PerformanceAnalytics::checkData(weights, method = "xts")
     if (NCOL(R) != NCOL(weights)) {
       if (NCOL(R) > NCOL(weights)) {
         R = R[, 1:NCOL(weights)]
@@ -423,11 +419,11 @@ Return.rebalancing_yrf <- function(R,
   }
   NCOLs <- ncol(weights) 
   # --- check the time windows of R and weights
-  if (as.Date(last(index(R))) < (as.Date(index(weights[1, ])) + 1)) {
-    stop(paste("last date in series", as.Date(last(index(R))),"occurs before beginning of first rebalancing period",  as.Date(first(index(weights))) + 1))
+  if (as.Date(xts::last(zoo::index(R))) < (as.Date(zoo::index(weights[1, ])) + 1)) {
+    stop(paste("last date in series", as.Date(xts::last(zoo::index(R))),"occurs before beginning of first rebalancing period",  as.Date(xts::first(zoo::index(weights))) + 1))
   }
-  if (as.Date(index(weights[1, ])) > as.Date(first(index(R)))) {
-    R <- R[paste0(as.Date(index(weights[1, ])) + 1, "/")]
+  if (as.Date(zoo::index(weights[1, ])) > as.Date(xts::first(zoo::index(R)))) {
+    R <- R[paste0(as.Date(zoo::index(weights[1, ])) + 1, "/")]
   }
   # --- check the fee data
   if(length(fee.buy)==1){
@@ -447,7 +443,7 @@ Return.rebalancing_yrf <- function(R,
   }
   
   # ---- deal with the weights not sum as 1 by adding a column 'cash' . 
-  R.cash <- xts(rep(0,nrow(R)),index(R))
+  R.cash <- xts(rep(0,nrow(R)),zoo::index(R))
   colnames(R.cash) <- "cash"
   R <- cbind(R,R.cash)
   weights.cash <- matrix(1-rowSums(weights),ncol = 1)
@@ -465,31 +461,31 @@ Return.rebalancing_yrf <- function(R,
   # --- loop rebalancing 
   for (row in 1:nrow(weights)) {
     weight_i <- weights[row, ]
-    from = as.Date(index(weight_i)) + 1
+    from = as.Date(zoo::index(weight_i)) + 1
     if (row == nrow(weights)) {
       to = as.Date(end(R))
     } else {
-      to = as.Date(index(weights[(row + 1), ]))
+      to = as.Date(zoo::index(weights[(row + 1), ]))
     }
     tmpR <- R[paste(from, to, sep = "/"), ]
     if (nrow(tmpR) >= 1) {
       list_i = Return.portfolio_yrf(tmpR, weights = weight_i, geometric=geometric)
-      rtn_i <- try.xts(list_i[["rtn"]])
+      rtn_i <- xts::try.xts(list_i[["rtn"]])
       wgt_EOP_i <- list_i[["wgt_EOP"]] 
       wgt_BOP_i <- list_i[["wgt_BOP"]]
       contribution_i <- list_i[["contribution"]]
       # --- get the trading seri
       if(row == 1){
-        trade_i <- xts(coredata(first(wgt_BOP_i)),index(weight_i))   # trade_i <- matrix(0,1,NCOLs)  # which one is better??
-        last_wgt_EOP <- coredata(last(wgt_EOP_i))
+        trade_i <- xts(zoo::coredata(xts::first(wgt_BOP_i)),zoo::index(weight_i))   # trade_i <- matrix(0,1,NCOLs)  # which one is better??
+        last_wgt_EOP <- zoo::coredata(xts::last(wgt_EOP_i))
       } else {  
-        trade_i <- xts(coredata(first(wgt_BOP_i)) - last_wgt_EOP, index(weight_i)) 
-        last_wgt_EOP <- coredata(last(wgt_EOP_i))
+        trade_i <- xts(zoo::coredata(xts::first(wgt_BOP_i)) - last_wgt_EOP, zoo::index(weight_i)) 
+        last_wgt_EOP <- zoo::coredata(xts::last(wgt_EOP_i))
       } 
       # --- cut fees from rtn due to reblancing (cut rtn of the next day of rebalancing) 
       buyfee_i <- trade_i[,trade_i>=0,drop=FALSE] %*% t(fee.buy[,trade_i>=0,drop=FALSE])
       sellfee_i <- -trade_i[,trade_i<0,drop=FALSE] %*% t(fee.sell[,trade_i<0,drop=FALSE]) 
-      coredata(rtn_i[1,]) <- coredata(rtn_i[1,])-buyfee_i-sellfee_i
+      zoo::coredata(rtn_i[1,]) <- zoo::coredata(rtn_i[1,])-buyfee_i-sellfee_i
       # --- stacking
       if (row == 1) {
         rtn = rtn_i
@@ -507,10 +503,10 @@ Return.rebalancing_yrf <- function(R,
     }
   }
   # --- result building
-  rtn <- reclass(rtn, R)
-  wgt_EOP <- reclass(wgt_EOP,R)
-  wgt_BOP <- reclass(wgt_BOP,R)
-  rebtrade <- reclass(rebtrade,weights)
+  rtn <- xts::reclass(rtn, R)
+  wgt_EOP <- xts::reclass(wgt_EOP,R)
+  wgt_BOP <- xts::reclass(wgt_BOP,R)
+  rebtrade <- xts::reclass(rebtrade,weights)
   if(!verbose){
     result <- rtn
   } else {
@@ -537,15 +533,15 @@ Return.portfolio_yrf <- function (R, weights, geometric=TRUE) {
     wealthindex.weighted <- wealthindex.assets*kronecker(matrix(1,nrow(R),1),weights) # value_EOP    
     wealthindex = as.matrix(rowSums(wealthindex.weighted,na.rm=TRUE),ncol=1)
     wgt_EOP  <- wealthindex.weighted/kronecker(matrix(1,1,ncol(R)),wealthindex)   # wgt_EOP 
-    wgt_BOP <- xts(rbind(coredata(weights),coredata(wgt_EOP)[-nrow(R),]),index(R))    # wgt_BOP
+    wgt_BOP <- xts(rbind(zoo::coredata(weights),zoo::coredata(wgt_EOP)[-nrow(R),]),zoo::index(R))    # wgt_BOP
     contribution <- wgt_BOP*R     # contribution
-    wealthindex <- xts(wealthindex,index(R))     
+    wealthindex <- xts(wealthindex,zoo::index(R))     
     wealthindex <- rbind(xts(1,start(wealthindex)-1),wealthindex)
     rtn <- Returns(wealthindex,trim=TRUE)  # rtn
   }
   rownames(rtn) <- NULL
   colnames(rtn) <- "portfolioReturns"
-  rtn <- reclass(rtn, R)  
+  rtn <- xts::reclass(rtn, R)  
   # wgt_EOP <- wgt_EOP[,-ncol(wgt_EOP)] # remove the col of cash
   result <- list(rtn = rtn,
                  wgt_EOP = wgt_EOP,
@@ -564,7 +560,6 @@ Return.portfolio_yrf <- function (R, weights, geometric=TRUE) {
 #' @return a vector or scalar depending on the dim of seri
 #' @author Ruifei.Yin
 #' @export
-#' @importFrom lubridate as.duration dyears	
 #' @examples
 #' seri <- zoo(runif(30,0,1),seq(Sys.Date(),by="month",length.out=30))
 #' re <- Turnover.annualized(seri)
@@ -573,11 +568,11 @@ Return.portfolio_yrf <- function (R, weights, geometric=TRUE) {
 Turnover.annualized <- function(seri){
   if(is.null(dim(seri))){
     seri <- na.omit(seri)
-    seri <- try.xts(seri)
+    seri <- xts::try.xts(seri)
     from <- start(seri)
     to <- end(seri)
-    diff <- as.duration(to-from)    
-    re <- sum(seri)*(dyears(1)/diff)
+    diff <- lubridate::as.duration(to-from)    
+    re <- sum(seri)*(lubridate::dyears(1)/diff)
   } else {
     re <- apply(seri,2,Turnover.annualized)
     dim(re) <- c(1,NCOL(seri))
@@ -602,7 +597,6 @@ Turnover.annualized <- function(seri){
 #' @return the returns series of the same class of \code{prices}
 #' @seealso \code{\link{WealthIndex}},\code{\link[timeSeries]{returns}}
 #' @export
-#' @importFrom timeSeries returns
 #' @author Ruifei.Yin
 #' @examples
 #' rtn.long <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+1:100)
@@ -613,13 +607,13 @@ Turnover.annualized <- function(seri){
 Returns <- function(prices,geometric=TRUE,na.rm = TRUE, trim = TRUE){
   if(geometric) method <- "simple" else method <- "compound"
   dm <- dim(prices)
-  prices <- checkData(prices,method="zoo")
-  rtn <- as.zoo(timeSeries::returns(as.timeSeries(prices),method=method,na.rm=na.rm,trim=trim))
-  index(rtn) <- if(trim) index(prices)[-1] else index(prices)
+  prices <- PerformanceAnalytics::checkData(prices,method="zoo")
+  rtn <- as.zoo(timeSeries::returns(timeSeries::as.timeSeries(prices),method=method,na.rm=na.rm,trim=trim))
+  zoo::index(rtn) <- if(trim) zoo::index(prices)[-1] else zoo::index(prices)
   if(is.null(dm)){
     dim(rtn) <- NULL
   }   
-  rtn <- reclass(rtn,prices)
+  rtn <- xts::reclass(rtn,prices)
   return(rtn)
 }
 
@@ -634,7 +628,6 @@ Returns <- function(prices,geometric=TRUE,na.rm = TRUE, trim = TRUE){
 #' @return the wealth index series of the same class of \code{rtn}
 #' @seealso \code{\link{Returns}},\code{\link[timeSeries]{cumulated}}
 #' @export
-#' @importFrom timeSeries cumulated
 #' @author Ruifei.Yin
 #' @examples
 #' rtn.long <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+1:100)
@@ -644,13 +637,13 @@ Returns <- function(prices,geometric=TRUE,na.rm = TRUE, trim = TRUE){
 WealthIndex <- function(rtn,geometric=TRUE){
   if(geometric) method <- "simple" else method <- "compound"
   dm <- dim(rtn)
-  rtn_ <- checkData(rtn,method="zoo")
-  wealthIndex <- as.zoo(timeSeries::cumulated(as.timeSeries(rtn_),method=method))
-  index(wealthIndex) <- index(rtn_)
+  rtn_ <- PerformanceAnalytics::checkData(rtn,method="zoo")
+  wealthIndex <- as.zoo(timeSeries::cumulated(timeSeries::as.timeSeries(rtn_),method=method))
+  zoo::index(wealthIndex) <- zoo::index(rtn_)
   if(is.null(dm)){
     dim(wealthIndex) <- NULL
   }  
-  wealthIndex <- reclass(wealthIndex,rtn)
+  wealthIndex <- xts::reclass(wealthIndex,rtn)
   return(wealthIndex)
 }
 
@@ -665,7 +658,6 @@ WealthIndex <- function(rtn,geometric=TRUE){
 #' @return a matrix, giving the summary infomation of the rtn series,including Annualized Return,Annualized Std Dev,Annualized Sharpe,HitRatio,Worst Drawdown 
 #' @author Ruifei.Yin
 #' @export
-#' @importFrom PerformanceAnalytics maxDrawdown	Return.cumulative table.AnnualizedReturns
 #' @examples
 #' rtn.long <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+1:100)
 #' rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
@@ -673,13 +665,13 @@ WealthIndex <- function(rtn,geometric=TRUE){
 #' rtn.summary(rtn)
 rtn.summary <- function(rtn,hitFreq="day",hitSatisfied=0,Rf=0){
   rtn <- as.xts(rtn)   
-  annual <- as.matrix(table.AnnualizedReturns(rtn,Rf=Rf))
-  rtn.aggr <- aggregate(rtn,as.Date(cut(index(rtn),hitFreq)),Return.cumulative)
+  annual <- as.matrix(PerformanceAnalytics::table.AnnualizedReturns(rtn,Rf=Rf))
+  rtn.aggr <- aggregate(rtn,as.Date(cut(zoo::index(rtn),hitFreq)),PerformanceAnalytics::Return.cumulative)
   hit <- hitRatio(rtn.aggr,satisfied=hitSatisfied)
   dim(hit) <- c(1, NCOL(rtn))
   colnames(hit) <- colnames(rtn)
   rownames(hit) <- if(hitFreq=="day") "HitRatio" else paste("HitRatio (of ",hitFreq,")",sep="")
-  maxDD <- maxDrawdown(rtn)
+  maxDD <- PerformanceAnalytics::maxDrawdown(rtn)
   dim(maxDD) <- c(1, NCOL(rtn))
   colnames(maxDD) <- colnames(rtn)
   rownames(maxDD) <- "Worst Drawdown"
@@ -700,7 +692,6 @@ rtn.summary <- function(rtn,hitFreq="day",hitSatisfied=0,Rf=0){
 #' @seealso \code{\link[PerformanceAnalytics]{table.Stats}}
 #' @author Ruifei.Yin
 #' @export
-#' @importFrom PerformanceAnalytics table.Stats
 #' @examples
 #' rtn.long <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+1:100)
 #' rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
@@ -708,7 +699,7 @@ rtn.summary <- function(rtn,hitFreq="day",hitSatisfied=0,Rf=0){
 #' rtn.stats(rtn)
 rtn.stats <- function(rtn,hitSatisfied=0){
   rtn <- as.xts(rtn)
-  result.PApkg <- as.matrix(table.Stats(rtn))
+  result.PApkg <- as.matrix(PerformanceAnalytics::table.Stats(rtn))
   hitRatio <- hitRatio(rtn,hitSatisfied)
   result <- rbind(hitRatio,result.PApkg)
   return(result)
@@ -725,8 +716,6 @@ rtn.stats <- function(rtn,hitSatisfied=0){
 #' @seealso \code{\link[timeSeries]{fapply}}
 #' @author Ruifei.Yin
 #' @export
-#' @importFrom timeSeries fapply as.timeSeries
-#' @importFrom PerformanceAnalytics Return.annualized
 #' @examples
 #' rtn.long <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+1:100)
 #' rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
@@ -735,17 +724,17 @@ rtn.stats <- function(rtn,hitSatisfied=0){
 #' rtn.periods(rtn,from=c("2010-02-03","2010-03-04"),to=c("2010-03-09","2010-03-30"))
 rtn.periods <- function(rtn,freq="year",from,to) {  
   if(missing(from)||missing(to)){
-    from <- unique(cut.Date2(index(rtn),freq,lab.side="begin"))
-    to <- unique(cut.Date2(index(rtn),freq,lab.side="end"))
+    from <- unique(cut.Date2(zoo::index(rtn),freq,lab.side="begin"))
+    to <- unique(cut.Date2(zoo::index(rtn),freq,lab.side="end"))
   }
   rtn <- as.zoo(rtn)
   # ---- periods cumulative rtn
-  table.periods <- timeSeries::fapply(timeSeries::as.timeSeries(rtn),from,to,FUN=Return.cumulative)
+  table.periods <- timeSeries::fapply(timeSeries::as.timeSeries(rtn),from,to,FUN=PerformanceAnalytics::Return.cumulative)
   table.periods <- as.matrix(table.periods)
   rownames(table.periods) <- paste(from,to,sep=" ~ ")  
   # ---- overall cumulative rtn and annnualized rtn
-  table.overall <- Return.cumulative(rtn)
-  table.annual <- Return.annualized(rtn)  
+  table.overall <- PerformanceAnalytics::Return.cumulative(rtn)
+  table.annual <- PerformanceAnalytics::Return.annualized(rtn)  
   result <- rbind(table.periods,table.overall,table.annual)
   return(result)
 }
@@ -765,19 +754,19 @@ rtn.periods <- function(rtn,freq="year",from,to) {
 #' rtn <- merge(rtn.long,rtn.short)
 #' rtn.lastperiods(rtn,list(months(3),months(6),years(1)))
 rtn.lastperiods <- function(rtn,periods=list(months(1),months(3),months(6),years(1),years(3),years(5))){
-  rtn <- try.xts(rtn)
+  rtn <- xts::try.xts(rtn)
   to <- rep(end(rtn),length(periods))
   from <- vector()
   for(ii in 1:length(periods)){
     from[ii] <- to[ii]-periods[[ii]]
   }
   class(from) <- class(to)
-  re <- timeSeries::fapply(as.timeSeries(rtn),from,to,FUN=Return.cumulative)
+  re <- timeSeries::fapply(timeSeries::as.timeSeries(rtn),from,to,FUN=PerformanceAnalytics::Return.cumulative)
   re <- as.matrix(re)
-  period.char <- laply(periods,function(x){substring(capture.output(x),5)})
+  period.char <- plyr::laply(periods,function(x){substring(capture.output(x),5)})
   rownames(re) <- paste("Last",period.char)
   # ---- add overall cumulative rtn
-  overall <- Return.cumulative(rtn)
+  overall <- PerformanceAnalytics::Return.cumulative(rtn)
   rownames(overall) <- "Overall"
   re <- rbind(re,overall)
   return(re)
@@ -791,7 +780,6 @@ rtn.lastperiods <- function(rtn,periods=list(months(1),months(3),months(6),years
 #' @param freq An interval specification, one of "day", "week", "month", "quarter" and "year", optionally preceded by an integer and a space, or followed by "s".See \code{\link{cut.Date}} for detail.  
 #' @return a aggregated return series, of the same class of \code{rtn}.
 #' @export
-#' @importFrom PerformanceAnalytics checkData
 #' @author Ruifei.yin
 #' @examples
 #' rtn.long <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+1:100)
@@ -801,14 +789,14 @@ rtn.lastperiods <- function(rtn,periods=list(months(1),months(3),months(6),years
 aggr.rtn <- function(rtn,freq){
   dm <- dim(rtn)
   colnm <- colnames(rtn)
-  rtn <- checkData(rtn,method="zoo")
-  by <- cut.Date2(index(rtn),freq)
-  re <- aggregate(rtn,as.Date(by),Return.cumulative)
+  rtn <- PerformanceAnalytics::checkData(rtn,method="zoo")
+  by <- cut.Date2(zoo::index(rtn),freq)
+  re <- aggregate(rtn,as.Date(by),PerformanceAnalytics::Return.cumulative)
   colnames(re) <- colnm
   if(is.null(dm)){
     dim(re) <- NULL
   }
-  re <- reclass(re,rtn)
+  re <- xts::reclass(re,rtn)
   return(re)
 }
 
@@ -832,8 +820,8 @@ aggr.rtn <- function(rtn,freq){
 aggr.quote <- function(quote,freq,var="close"){
   dm <- dim(quote)
   colnm <- colnames(quote)
-  quote <- checkData(quote,method="zoo")
-  by <- cut.Date2(index(quote),freq)
+  quote <- PerformanceAnalytics::checkData(quote,method="zoo")
+  by <- cut.Date2(zoo::index(quote),freq)
   re <- switch(var,
                close = aggregate(quote,as.Date(by),tail,1),
                open  = aggregate(quote,as.Date(by),head,1),
@@ -845,7 +833,7 @@ aggr.quote <- function(quote,freq,var="close"){
   if(is.null(dm)){
     dim(re) <- NULL
   }
-  re <- reclass(re,quote)
+  re <- xts::reclass(re,quote)
   return(re)  
 }
 
@@ -866,8 +854,8 @@ aggr.quote <- function(quote,freq,var="close"){
 #' rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
 #' rtn <- merge(rtn.long,rtn.short)
 #' re <- rollingPerformance(rtn, width=20, by=5)
-rollingPerformance <- function(rtn,FUN="Return.annualized",width=365,by=30,align = "right",...){
-  x = try.xts(rtn)
+rollingPerformance <- function(rtn,FUN="PerformanceAnalytics::Return.annualized",width=365,by=30,align = "right",...){
+  x = xts::try.xts(rtn)
   columns = ncol(x)
   columnnames = colnames(x)
   funargs <- list(...)
@@ -901,7 +889,6 @@ rollingPerformance <- function(rtn,FUN="Return.annualized",width=365,by=30,align
 #' @return a page of plots
 #' @author Ruifei.Yin
 #' @export
-#' @importFrom grid grid.newpage grid.layout pushViewport viewport
 #' @examples
 #' p1 <- qplot(y=1:4)
 #' p2 <- qplot(1:5,10:14)
@@ -916,10 +903,10 @@ multiplot <- function(..., plotlist=NULL, ncol=1) {
   plotCols = ncol                          # Number of columns of plots
   plotRows = ceiling(numPlots/plotCols) # Number of rows needed, calculated from ncol  
   # Set up the page
-  grid.newpage()
-  pushViewport(viewport(layout = grid.layout(plotRows, plotCols)))
+  grid::grid.newpage()
+  grid::pushViewport(grid::viewport(layout = grid::grid.layout(plotRows, plotCols)))
   vplayout <- function(x, y)
-    viewport(layout.pos.row = x, layout.pos.col = y)  
+    grid::viewport(layout.pos.row = x, layout.pos.col = y)  
   # Make each plot, in the correct location
   for (i in 1:numPlots) {
     curRow = ceiling(i/plotCols)
@@ -995,7 +982,6 @@ multiplot_facet <- function(plotlist,
 #' @param main title of the chart
 #' @return Print a wrapped plots of class ggplot,and return a recordedplot object.
 #' @author Ruifei.Yin
-#' @importFrom grid unit
 #' @export
 #' @examples
 #' rtn1 <- zoo(rnorm(300,0.001,0.02),as.Date("2010-01-01")+1:300)
@@ -1022,13 +1008,13 @@ ggplots.PerformanceSummary <- function(rtn,
       if(i==1){ # set the title of the whole chart,remove the x axis
         chart.cum[[i]] <- ggplot.WealthIndex(rtn[,var.cum[[i]],drop=FALSE],main=main,size=1)+
           ylab("WealthIndex")+
-          theme(legend.position=lp.cum,legend.key.size = unit(lks, "cm"))+
+          theme(legend.position=lp.cum,legend.key.size = grid::unit(lks, "cm"))+
           #         theme(legend.background = theme_rect(fill="gray90", size=lbs, linetype="dotted"))+
           theme(axis.text.x= element_blank(),axis.title.x= element_blank(),axis.ticks.x= element_blank())
       } else { # remove the x axis
         chart.cum[[i]] <- ggplot.WealthIndex(rtn[,var.cum[[i]],drop=FALSE],main=NULL,size=1)+
           ylab("WealthIndex")+
-          theme(legend.position=lp.cum,legend.key.size = unit(lks, "cm"))+
+          theme(legend.position=lp.cum,legend.key.size = grid::unit(lks, "cm"))+
           #         theme(legend.background = theme_rect(fill="gray90", size=lbs, linetype="dotted"))+
           theme(axis.text.x= element_blank(),axis.title.x= element_blank(),axis.ticks.x= element_blank())
       }
@@ -1042,13 +1028,13 @@ ggplots.PerformanceSummary <- function(rtn,
       if(i==length(var.dd)){ # remove the x axis title
         chart.dd[[i]] <- ggplot.Drawdown(rtn[,var.dd[[i]],drop=FALSE],main=NULL)+
           ylab("Drawdown")+
-          theme(legend.position=lp.dd,legend.key.size = unit(lks, "cm"))+
+          theme(legend.position=lp.dd,legend.key.size = grid::unit(lks, "cm"))+
           #         theme(legend.background = theme_rect(fill="gray90", size=lbs, linetype="dotted"))+
           theme(axis.text.x= element_blank(),axis.title.x= element_blank(),axis.ticks.x= element_blank())
       } else { # remove the whole x axis
         chart.dd[[i]] <- ggplot.Drawdown(rtn[,var.dd[[i]],drop=FALSE],main=NULL)+
           ylab("Drawdown")+
-          theme(legend.position=lp.dd,legend.key.size = unit(lks, "cm"))+
+          theme(legend.position=lp.dd,legend.key.size = grid::unit(lks, "cm"))+
           #         theme(legend.background = theme_rect(fill="gray90", size=lbs, linetype="dotted"))+
           theme(axis.text.x= element_blank(),axis.title.x= element_blank(),axis.ticks.x= element_blank())
       }
@@ -1063,12 +1049,12 @@ ggplots.PerformanceSummary <- function(rtn,
       if(i==length(var.bar)){ # maintain the x axis 
         chart.bar[[i]] <- ggplot.rtnBar(rtn[,var.bar[[i]],drop=FALSE],freq=bar.freq,main=NULL)+
           ylab(paste(freq.lab,"return"))+
-          theme(legend.position=lp.bar,legend.key.size = unit(lks, "cm"))
+          theme(legend.position=lp.bar,legend.key.size = grid::unit(lks, "cm"))
         #         theme(legend.background = theme_rect(fill="gray90", size=lbs, linetype="dotted"))
       } else { # remove the x axis
         chart.bar[[i]] <- ggplot.rtnBar(rtn[,var.bar[[i]],drop=FALSE],freq=bar.freq,main=NULL)+
           ylab(paste(freq.lab,"return"))+
-          theme(legend.position=lp.bar,legend.key.size = unit(lks, "cm"))+
+          theme(legend.position=lp.bar,legend.key.size = grid::unit(lks, "cm"))+
           #         theme(legend.background = theme_rect(fill="gray90", size=lbs, linetype="dotted"))+
           theme(axis.text.x= element_blank(),axis.title.x= element_blank(),axis.ticks.x= element_blank())
       }
@@ -1134,38 +1120,35 @@ ggplots.PerformanceSummary2 <- function(rtn,
 #' @seealso \code{\link{rollingPerformance}}
 #' @author Ruifei.Yin
 #' @export
-#' @importFrom scales percent	
-#' @importFrom xts periodicity
-#' @importFrom PerformanceAnalytics Return.annualized StdDev.annualized SharpeRatio.annualized
 #' @examples
 #' rtn.long <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+1:100)
 #' rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
 #' rtn <- merge(rtn.long,rtn.short)
 #' ggplots.RollingPerformance(rtn)
 ggplots.RollingPerformance <- function(rtn,width=250,by=30,...){
-  rtn <- try.xts(rtn)
-  rtn.annu <- rollingPerformance(rtn,FUN="Return.annualized",width=width,by=by,...)
-  stdev.annu <- rollingPerformance(rtn,FUN="StdDev.annualized",width=width,by=by,...)
-  sharp.annu <- rollingPerformance(rtn,FUN="SharpeRatio.annualized",width=width,by=by,...)
+  rtn <- xts::try.xts(rtn)
+  rtn.annu <- rollingPerformance(rtn,FUN="PerformanceAnalytics::Return.annualized",width=width,by=by,...)
+  stdev.annu <- rollingPerformance(rtn,FUN="PerformanceAnalytics::StdDev.annualized",width=width,by=by,...)
+  sharp.annu <- rollingPerformance(rtn,FUN="PerformanceAnalytics::SharpeRatio.annualized",width=width,by=by,...)
   
   rtn.annu <- na.omit(rtn.annu)
   stdev.annu <- na.omit(stdev.annu)
   sharp.annu <- na.omit(sharp.annu)
   
-  freq.lab = periodicity(rtn)$label
+  freq.lab = xts::periodicity(rtn)$label
   main <- paste("Rolling", width, paste(freq.lab,"s",sep=""), "Performance", sep = " ")
   p1 <- ggplot.ts.line(rtn.annu,main=main,size=1)+ 
     ylab("Annu. Return")+
     theme(legend.position=c(0.1, 0.7))+
 #     theme(legend.background = theme_rect(fill="gray90", size=.5, linetype="dotted"))+
     theme(axis.text.x= element_blank(),axis.title.x= element_blank(),axis.ticks.x= element_blank())+
-    scale_y_continuous(labels=percent)
+    scale_y_continuous(labels=scales::percent)
   p2<- ggplot.ts.line(stdev.annu,size=1)+ 
     ylab("Annu. stdev")+
     theme(legend.position=c(0.1, 0.8))+
 #     theme(legend.background = theme_rect(fill="gray90", size=.5, linetype="dotted"))+
     theme(axis.text.x= element_blank(),axis.title.x= element_blank(),axis.ticks.x= element_blank())+
-    scale_y_continuous(labels=percent)
+    scale_y_continuous(labels=scales::percent)
   p3<- ggplot.ts.line(sharp.annu,size=1)+
     ylab("Annu. Sharp")+
     theme(legend.position=c(0.1, 0.8))
@@ -1181,7 +1164,7 @@ ggplot.Drawdown <- function(rtn,geometric=TRUE,main=NULL,...){
   dd <- PerformanceAnalytics:::Drawdowns(rtn,geometric=geometric)
   ggplot.ts.area(dd,main=main,position="identity",...)+
     ylab("Drawdown")+
-    scale_y_continuous(labels=percent)
+    scale_y_continuous(labels=scales::percent)
 }
 #' ggplot.WealthIndex
 #' @export ggplot.WealthIndex
@@ -1196,10 +1179,10 @@ ggplot.WealthIndex <- function(rtn,geometric=TRUE,main=NULL,...){
 #' @export ggplot.rtnBar
 ggplot.rtnBar <- function(rtn,freq="month",main=NULL,...){
   rtn <- aggr.rtn(rtn,freq=freq)
-  freq.lab = periodicity(rtn)$scale
+  freq.lab = xts::periodicity(rtn)$scale
   ggplot.ts.bar(rtn,main=main,...)+
     ylab(paste(freq.lab,"Return"))+
-    scale_y_continuous(labels=percent)    
+    scale_y_continuous(labels=scales::percent)    
 }
 
 
@@ -1223,8 +1206,8 @@ ggplot.Histogram.rtn <- function(){
 #' ggplot.ts.line(rtn)
 ggplot.ts.line <- function(ts, main = NULL,...){
   ts <- as.xts(ts)
-  ts.df <- data.frame(time=time(ts),coredata(ts))
-  ts.melt <- melt(ts.df,id.vars="time")  
+  ts.df <- data.frame(time=time(ts),zoo::coredata(ts))
+  ts.melt <- reshape2::melt(ts.df,id.vars="time")  
 #   qplot(x=time,y=value,color=variable,...,data=ts.melt,geom = "line",log = log, main = main)+
 #     theme(legend.title=element_blank())  
   ggplot(ts.melt, aes(x=time, y=value, color=variable)) +
@@ -1248,8 +1231,8 @@ ggplot.ts.line <- function(ts, main = NULL,...){
 #' ggplot.ts.area(rtn)
 ggplot.ts.area <- function(ts, main = NULL,...){
   ts <- as.xts(ts)
-  ts.df <- data.frame(time=time(ts),coredata(ts))
-  ts.melt <- melt(ts.df,id.vars="time")  
+  ts.df <- data.frame(time=time(ts),zoo::coredata(ts))
+  ts.melt <- reshape2::melt(ts.df,id.vars="time")  
   #   qplot(x=time,y=value,color=variable,...,data=ts.melt,geom = "area",log = log, main = main)+
   #     theme(legend.title=element_blank())  
   ggplot(ts.melt, aes(x=time, y=value, fill=variable)) +
@@ -1273,8 +1256,8 @@ ggplot.ts.area <- function(ts, main = NULL,...){
 #' ggplot.ts.bar(rtn)
 ggplot.ts.bar <- function(ts,main = NULL,...){
   ts <- as.xts(ts)
-  ts.df <- data.frame(time=time(ts),coredata(ts))
-  ts.melt <- melt(ts.df,id.vars="time")
+  ts.df <- data.frame(time=time(ts),zoo::coredata(ts))
+  ts.melt <- reshape2::melt(ts.df,id.vars="time")
 #   qplot(x=as.factor(time),fill=variable,data=ts.melt,geom = "bar",weight=value,position="dodge", main = main,xlab="time") +
 #    scale_y_continuous("value")  
 #   ts.melt$time <- factor(ts.melt$time)
@@ -1298,8 +1281,8 @@ ggplot.ts.bar <- function(ts,main = NULL,...){
 #' df <- melt.ts(rtn)
 melt.ts <- function(ts){
   ts <- as.xts(ts)
-  ts.df <- data.frame(time=time(ts),coredata(ts))
-  ts.melt <- melt(ts.df,id.vars="time")
+  ts.df <- data.frame(time=time(ts),zoo::coredata(ts))
+  ts.melt <- reshape2::melt(ts.df,id.vars="time")
   return(ts.melt)
 }
 
@@ -1403,7 +1386,6 @@ vlookup <- function(x, table, by, ret){
 #' @param exclude.x a logical. If the \code{x} shoud be inculded in the result?
 #' @return a data frame (or a vector if \code{exclude.x} is TRUE and length of \code{ret} is 1).
 #' @export vlookup.df
-#' @importFrom data.table data.table  
 #' @examples
 #' x <- data.frame(m1=1:3,m2=c("a","b","c"))
 #' table <- data.frame(K1=c(2,3,1,5,6),K2=c("b","c","a","f","x"),v1=LETTERS[1:5],v2=LETTERS[8:12])
@@ -1419,11 +1401,11 @@ vlookup.df <- function(x, table, by=colnames(x), ret=setdiff(colnames(table),by)
   x <- renameCol(x, src=colnames(x), tgt=by)
   if("PK_" %in% colnames(x)) stop ("Name conflict!")
   x$PK_ <- 1:NROW(x)
-  x <- data.table(x, key=by)
-  table <- data.table(table, key=by)
+  x <- data.table::data.table(x, key=by)
+  table <- data.table::data.table(table, key=by)
   re <- merge(x, table, by=by, all.x=TRUE)
   re <- as.data.frame(re)
-  re <- arrange(re, PK_)
+  re <- dplyr::arrange(re, PK_)
   re$PK_ <- NULL
   if(exclude.x){
     re <- re[ ,ret]
@@ -1441,7 +1423,6 @@ vlookup.df <- function(x, table, by=colnames(x), ret=setdiff(colnames(table),by)
 #' @param mult a character string: one of "all","first","last". See detail in \code{\link[data.table]{data.table}}
 #' @return a new data.frame based on the merged data tables, sorted by the x order.
 #' @export merge.x
-#' @importFrom data.table data.table 
 #' @author Ruifei.Yin
 #' @examples
 #' x <- data.frame(k1=c(1,5,3),k2=c("a","a","c"),V=11:13)
@@ -1453,11 +1434,11 @@ vlookup.df <- function(x, table, by=colnames(x), ret=setdiff(colnames(table),by)
 merge.x <- function(x, y, by = intersect(colnames(x),colnames(y)), mult="all"){
   if("PK_" %in% colnames(x)) stop ("Name conflict!")
   x$PK_ <- 1:NROW(x)
-  x <- data.table(x,key=by)
-  y <- data.table(y,key=by)
+  x <- data.table::data.table(x,key=by)
+  y <- data.table::data.table(y,key=by)
   re <- y[x, mult=mult]
   re <- as.data.frame(re)
-  re <- arrange(re,PK_)
+  re <- dplyr::arrange(re,PK_)
   re$PK_ <- NULL
   return(re)
 }
@@ -1820,10 +1801,10 @@ eventRtn.stats <- function(eventRtn){
 
 
 
-#' @export
+
 test.temp <- function(){
   x <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+1:100)
-  # x = try.xts(x)
+  # x = xts::try.xts(x)
   print(environment(rollapply))
   print(environment(as.xts))
   

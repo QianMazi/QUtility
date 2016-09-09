@@ -2,11 +2,10 @@
 #'
 #' @name QUtility
 #' @docType package
-#' @import ggplot2 dplyr 
-#' @importFrom zoo zoo as.Date index coredata rollapply as.zoo index<-
-#' @importFrom xts as.xts xts try.xts reclass first last
-#' @importFrom reshape2 acast dcast melt
-#' @importFrom plyr ddply ldply laply
-#' @importFrom data.table data.table
+#' @import ggplot2  
+#' @importFrom zoo zoo  as.zoo
+#' @importFrom xts as.xts xts  
+#' @importFrom data.table data.table 
+#' @importFrom lubridate %m+% %m-%
 NULL
  

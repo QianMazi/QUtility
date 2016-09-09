@@ -25,6 +25,17 @@ Return.rebalancing_yrf(R, weights = NULL, rebFreq = NA, fee.buy = 0,
 
 \item{warning.wgtsum}{a logical. wheather put out a warning when sum of the weights is not equal to 1 ?}
 }
+\value{
+IF verbose is FALSE, return a return series of the portfolio, else, return a list with items:
+  \itemize{ 
+  \item rtn: a time series of the portfolio return.
+  \item wgt_EOP: End of Period (BOP) Weight for each asset, with dims of \code{c(nrow(R), ncol(weights)+1)} .
+  \item wgt_BOP: Beginning of Period (BOP) Weight for each asset, with dims of \code{c(nrow(R), ncol(weights)+1)} .
+  \item contritution: The per period contribution to portfolio return of each asset, with dims of \code{c(nrow(R), ncol(weights)+1)}
+  \item weights: weights
+  \item rebtrade: a time series of the rebalancing trading of each asset, with dims of \code{c(nrow(weights), ncol(weights)+1)}, a  positive element means buying,and vice versa.
+  }
+}
 \description{
 These are wraped functions of \code{\link[PerformanceAnalytics]{Return.portfolio}} and \code{\link[PerformanceAnalytics]{Return.rebalancing}} in package \code{PerformanceAnalytics}, with some bug fixed and more result returned.
 }
