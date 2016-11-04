@@ -16,7 +16,7 @@ a vector of qoq rptDate.
 rptDate.qoq
 }
 \examples{
-rptDate.yoy(ymd(c(20100630,20141231,20130930)))
+rptDate.qoq(lubridate::ymd(c(20100630,20141231,20130930)))
 }
 \author{
 Ruifei.Yin

@@ -16,7 +16,7 @@ a vector of yoy rptDate.
 rptDate.yoy
 }
 \examples{
-rptDate.yoy(ymd(c(20100630,20141231,20130930)))
+rptDate.yoy(lubridate::ymd(c(20100630,20141231,20130930)))
 }
 \author{
 Ruifei.Yin

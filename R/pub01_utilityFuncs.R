@@ -31,6 +31,18 @@ check.colnames <- function (data,coltest) {
 
 #' @rdname check.colnames
 #' @export
+usualcols <- function(){
+  c("date","stockID","date_end","periodrtn","factorscore","sector","wgt")
+}
+#' @rdname check.colnames
+#' @export
+is_usualcols <- function(cols, usualcols=usualcols()){
+  re <- cols %in% usualcols | substr(cols,1,6)=="prdrtn"
+}
+
+
+#' @rdname check.colnames
+#' @export
 check.TS <- function(TS){
   coltest <- c("date","stockID")
   check.colnames(TS,coltest)
@@ -54,12 +66,7 @@ check.TSFR <- function(TSFR){
   coltest <- c("date","stockID","factorscore","periodrtn")
   check.colnames(TSFR,coltest)
 }
-#' @rdname check.colnames
-#' @export
-check.TSFR_decay <- function(TSFR){
-  coltest <- c("date","stockID","factorscore",paste("rtn",1:12,sep=""))
-  check.colnames(TSFR,coltest)
-}
+
 #' @rdname check.colnames
 #' @export
 check.Port <- function(port){
@@ -315,18 +322,18 @@ hitRatio <- function(rtn,satisfied=0){
 #' @param geometric a logical. generate geometric (TRUE) or simple (FALSE) returns, default TRUE
 #' @param fee.buy a single-row matrix or a vector containing buying fee of each assets. It also could be a numeric scalar, which means all the assets have the same fee. 
 #' @param fee.sell a single-row matrix or a vector containing selling fee of each assets. It also could be a numeric scalar, which means all the assets have the same fee.
-#' @param verbose a logic. If TRUE, return a list of intermediary calculations
+#' @param output a vector of character string, with default of c("rtn","turnover","wgt_EOP","wgt_BOP","contribution","weights","rebtrade")
 #' @param warning.wgtsum a logical. wheather put out a warning when sum of the weights is not equal to 1 ?
-#' @return IF verbose is FALSE, return a return series of the portfolio, else, return a list with items:
+#' @return a list with items:
 #'   \itemize{ 
 #'   \item rtn: a time series of the portfolio return.
+#'   \item turnover: a time series of turnover.
 #'   \item wgt_EOP: End of Period (BOP) Weight for each asset, with dims of \code{c(nrow(R), ncol(weights)+1)} .
 #'   \item wgt_BOP: Beginning of Period (BOP) Weight for each asset, with dims of \code{c(nrow(R), ncol(weights)+1)} .
 #'   \item contritution: The per period contribution to portfolio return of each asset, with dims of \code{c(nrow(R), ncol(weights)+1)}
 #'   \item weights: weights
 #'   \item rebtrade: a time series of the rebalancing trading of each asset, with dims of \code{c(nrow(weights), ncol(weights)+1)}, a  positive element means buying,and vice versa.
 #'   }
-#' @seealso \code{\link[PerformanceAnalytics]{Return.portfolio}}
 #' @author Ruifei.yin
 #' @export
 #' @examples
@@ -336,28 +343,28 @@ hitRatio <- function(rtn,satisfied=0){
 #' w2 <- (c(0.2,0.3,0.1))
 #' w3 <- (c(0.2,0.3,-0.5))
 #' w4 <- (c(1,0.5,0.5))
-#' Return.rebalancing_yrf(R,w1) # full position portfolio
-#' Return.rebalancing_yrf(R,w2) # unfull position portfolio
-#' Return.rebalancing_yrf(R,w3) # long-short portfolio
-#' Return.rebalancing_yrf(R,w4) # leveraged portfolio
+#' Return.backtesting(R,w1) # full position portfolio
+#' Return.backtesting(R,w2) # unfull position portfolio
+#' Return.backtesting(R,w3) # long-short portfolio
+#' Return.backtesting(R,w4) # leveraged portfolio
 #' # examples from \code{\link[PerformanceAnalytics]{Return.portfolio}}
 #' require(PerformanceAnalytics)
 #' data(edhec)
-#' re <- Return.rebalancing_yrf(edhec["1997",1:5], rebFreq="quarters", verbose=TRUE) 
+#' re <- Return.backtesting(edhec["1997",1:5], rebFreq="quarters") 
 #' # with a weights object
 #' data(weights) # rebalance at the beginning of the year to various weights through time
 #' chart.StackedBar(weights)
-#' x <- Return.rebalancing_yrf(edhec["2000::",1:11], weights=weights,verbose=TRUE)
+#' x <- Return.backtesting(edhec["2000::",1:11], weights=weights)
 #' chart.CumReturns(x$returns)
 #' chart.StackedBar(x$BOP.Weight)
 #' chart.StackedBar(x$BOP.Value) 
-Return.rebalancing_yrf <- function(R, 
-                                   weights=NULL,
-                                   rebFreq=NA,
-                                   fee.buy=0, fee.sell=0,
-                                   verbose=FALSE,
-                                   geometric = TRUE, 
-                                   warning.wgtsum=TRUE){
+Return.backtesting <- function(R, 
+                               weights=NULL,
+                               rebFreq=NA,
+                               fee.buy=0, fee.sell=0,
+                               output=c("rtn","turnover","wgt_EOP","wgt_BOP","contribution","weights","rebtrade"),
+                               geometric = TRUE, 
+                               warning.wgtsum=TRUE){
   
   # --- check the retrun data 
   R = PerformanceAnalytics::checkData(R, method = "xts")
@@ -418,13 +425,21 @@ Return.rebalancing_yrf <- function(R,
     }
   }
   NCOLs <- ncol(weights) 
+  
   # --- check the time windows of R and weights
-  if (as.Date(xts::last(zoo::index(R))) < (as.Date(zoo::index(weights[1, ])) + 1)) {
-    stop(paste("last date in series", as.Date(xts::last(zoo::index(R))),"occurs before beginning of first rebalancing period",  as.Date(xts::first(zoo::index(weights))) + 1))
+  if (as.Date(end(R)) < trday.nearby(as.Date(start(weights)),-1) ) {
+    stop(paste("The last date of return series", as.Date(end(R)),"occurs before beginning of first rebalancing period",  trday.nearby(as.Date(start(weights)),-1) ))
   }
-  if (as.Date(zoo::index(weights[1, ])) > as.Date(xts::first(zoo::index(R)))) {
-    R <- R[paste0(as.Date(zoo::index(weights[1, ])) + 1, "/")]
-  }
+  # if (as.Date(start(R)) < as.Date(zoo::index(weights[1, ]))) {
+  #   R <- R[paste0(as.Date(zoo::index(weights[1, ])) + 1, "/")]
+  # }
+  # if (as.Date(start(R)) > trday.nearby(as.Date(start(weights)),-1)) {
+  #   warning(paste("Return series start on", as.Date(start(R)), ", which is after the first rebalancing period", trday.nearby(as.Date(start(weights)),-1),". The first rebalancing point will be supposed to",as.Date(start(R))-1))
+  # }
+  if (as.Date(end(R)) < as.Date(end(weights))+1 ) {
+    warning(paste("Return series end on", as.Date(end(R)), ", which is before the last rebalancing period", trday.nearby(as.Date(end(weights)),-1),". The last rebalancing period will be ignored"))
+  }  
+    
   # --- check the fee data
   if(length(fee.buy)==1){
     fee.buy <- rep(fee.buy,NCOLs)    
@@ -500,24 +515,34 @@ Return.rebalancing_yrf <- function(R,
         contribution <- rbind(contribution,contribution_i)
         rebtrade <- rbind(rebtrade,trade_i)
       }
+    } else {
+      warning(paste("There is no return data during the rebalance period of",as.Date(zoo::index(weight_i)),"!"))
     }
   }
+  
+  
+  # --- the turnover seri
+  turnover.buy <- apply(rebtrade, MARGIN=1, function(x){sum(x[x>0])})
+  turnover.sell <- apply(rebtrade, MARGIN=1, function(x){sum(x[x<0])})
+  turnover.net <- turnover.buy+turnover.sell
+  turnover.avg <- (turnover.buy-turnover.sell)/2
+  turnover_seri <- cbind(turnover.buy, turnover.sell, turnover.net, turnover.avg)
+  colnames(turnover_seri) <- c("buy","sell","net","avg")
+  
   # --- result building
   rtn <- xts::reclass(rtn, R)
   wgt_EOP <- xts::reclass(wgt_EOP,R)
   wgt_BOP <- xts::reclass(wgt_BOP,R)
   rebtrade <- xts::reclass(rebtrade,weights)
-  if(!verbose){
-    result <- rtn
-  } else {
-    result <- list(rtn=rtn,
-                   wgt_EOP=wgt_EOP,
-                   wgt_BOP=wgt_BOP,
-                   contribution=contribution,
-                   weights=weights,
-                   rebtrade=rebtrade)
-  }
-  return(result)
+  turnover_seri <- xts::reclass(turnover_seri,weights)
+  result <- list(rtn=rtn,
+                 turnover=turnover_seri,
+                 wgt_EOP=wgt_EOP,
+                 wgt_BOP=wgt_BOP,
+                 contribution=contribution,
+                 weights=weights,
+                 rebtrade=rebtrade)
+  return(result[output])
 }
 
   
@@ -553,33 +578,215 @@ Return.portfolio_yrf <- function (R, weights, geometric=TRUE) {
 
 
 
-#' Turnover.annualized
+
+
+#' periodicity_Ndays
 #' 
-#' calculate an annualized turnover rate from a turnover series
-#' @param seri a turnover series,an object of class timeSeries,zoo or xts
+#' Estimate the periodicity of a time-series-like object by calculating the mean time between observations in days.
+#' @param x a timeseries object or a Date vector
+#' @return a numeric
+#' @export
+#' @seealso \link[xts]{periodicity}
+periodicity_Ndays <- function(x) {
+  if("Date" %in% class(x)){
+    idx <- x
+  } else{
+    idx <- zoo::index(x)
+    if(class(idx)!="Date"){
+      stop("The index must be class of Date")
+    }
+  }
+  p_Ndays <- mean(diff(idx),na.rm = TRUE)
+  if (is.na(p_Ndays)) {
+    warning("can not calculate periodicity of 1 observation. Return NA.")
+  }
+  return(as.numeric(p_Ndays))
+}
+
+
+#' annualized functions
+#' 
+#' calculate an annualized return, stddev, turnover.
+#' @rdname annulized
+#' @name annulized
+#' @aliases Turnover.annualized
+#' @param R a return, stddev, turnover series, an object of class timeSeries,zoo or xts
 #' @return a vector or scalar depending on the dim of seri
 #' @author Ruifei.Yin
 #' @export
 #' @examples
+#' #-- turnover.annulized
 #' seri <- zoo(runif(30,0,1),seq(Sys.Date(),by="month",length.out=30))
 #' re <- Turnover.annualized(seri)
 #' seri <- zoo(matrix(runif(60,0,1),30,2),seq(Sys.Date(),by="month",length.out=30))
 #' re <- Turnover.annualized(seri)
-Turnover.annualized <- function(seri){
-  if(is.null(dim(seri))){
-    seri <- na.omit(seri)
-    seri <- xts::try.xts(seri)
-    from <- start(seri)
-    to <- end(seri)
-    diff <- lubridate::as.duration(to-from)    
-    re <- sum(seri)*(lubridate::dyears(1)/diff)
-  } else {
-    re <- apply(seri,2,Turnover.annualized)
-    dim(re) <- c(1,NCOL(seri))
-    colnames(re) <- colnames(seri)
-    rownames(re) <- "Annualized Turnover"
+Turnover.annualized <- function(R){
+  subFun <- function(x){
+    result <- mean(x,na.rm = TRUE) * scale
+    return(result)
   }
-  return(re)
+  p_Nday <- periodicity_Ndays(R)
+  scale <- 365/p_Nday
+  if(is.null(dim(R))){
+    re <- subFun(R)
+    return(re)
+  }else{
+    re = apply(R, 2, subFun)
+    dim(re) = c(1, NCOL(R))
+    colnames(re) = colnames(R)
+    rownames(re) = "Annualized Turnover"
+    return(re)
+  }
+}
+
+
+
+#' @rdname annulized
+#' @export
+#' @param geometric a logical. generate geometric (TRUE) or simple (FALSE) returns, default TRUE
+#' @examples 
+#' #-- return.annulized
+#' #- monthly
+#' rtn.long <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+(1:100)*30)
+#' rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
+#' rtn <- merge(rtn.long,rtn.short)
+#' Return.annualized(rtn) 
+#' PerformanceAnalytics::Return.annualized(rtn) 
+#' #- 10day
+#' rtn.long <- zoo(rnorm(100,0.001,0.02),as.Date("2010-01-01")+(1:100)*10)
+#' rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
+#' rtn <- merge(rtn.long,rtn.short)
+#' Return.annualized(rtn) # right
+#' PerformanceAnalytics::Return.annualized(rtn) # wrong!
+Return.annualized <- function (R, geometric = TRUE) {
+  subFun <- function(x, geometric){
+    x = na.omit(x)
+    if (geometric) {
+      result = prod(1 + x)^(scale/length(x)) - 1
+    }
+    else {
+      result = mean(x) * scale
+    }
+    result
+  }
+  p_Nday <- periodicity_Ndays(R)
+  scale <- 365/p_Nday
+  if(is.null(dim(R))){
+    re <- subFun(R, geometric)
+    return(re)
+  }else{
+    re = apply(R, 2, subFun, geometric = geometric)
+    dim(re) = c(1, NCOL(R))
+    colnames(re) = colnames(R)
+    rownames(re) = "Annualized Return"
+    return(re)
+  }
+}
+
+
+
+#' @rdname annulized
+#' @export
+StdDev.annualized <- function(R){
+  subFun <- function(x){
+    result <- sqrt(scale) * sd(x, na.rm = TRUE)
+    return(result)
+  }
+  p_Nday <- periodicity_Ndays(R)
+  scale <- 365/p_Nday
+  if(is.null(dim(R))){
+    re <- subFun(R)
+    return(re)
+  }else{
+    re = apply(R, 2, subFun)
+    dim(re) = c(1, NCOL(R))
+    colnames(re) = colnames(R)
+    rownames(re) = "Annualized StdDev"
+    return(re)
+  }
+}
+
+
+#' @rdname annulized
+#' @export
+IC.annualized <- function(R){
+  subFun <- function(x){
+    result <- sqrt(scale) * mean(x, na.rm = TRUE)
+    return(result)
+  }
+  p_Nday <- periodicity_Ndays(R)
+  scale <- 365/p_Nday
+  if(is.null(dim(R))){
+    re <- subFun(R)
+    return(re)
+  }else{
+    re = apply(R, 2, subFun)
+    dim(re) = c(1, NCOL(R))
+    colnames(re) = colnames(R)
+    rownames(re) = "Annualized IC"
+    return(re)
+  }
+}
+
+#' @rdname annulized
+#' @export
+SharpeRatio.annualized <- function (R, Rf = 0, geometric = TRUE) {
+  subFun <- function(x, geometric){
+    x = na.omit(x)
+    if (geometric) {
+      rtn = prod(1 + x)^(scale/length(x)) - 1
+    }
+    else {
+      rtn = mean(x) * scale
+    }
+    stdev <- sqrt(scale) * sd(x, na.rm = TRUE)
+    result <- (rtn-Rf)/stdev
+    return(result)
+  }
+  p_Nday <- periodicity_Ndays(R)
+  scale <- 365/p_Nday
+  if(is.null(dim(R))){
+    re <- subFun(R, geometric)
+    return(re)
+  }else{
+    re = apply(R, 2, subFun, geometric = geometric)
+    dim(re) = c(1, NCOL(R))
+    colnames(re) = colnames(R)
+    rownames(re) = paste("Annualized Sharpe(Rf=",round(Rf * 100, 1), "%)", sep = "")
+    return(re)
+  }
+}
+
+
+
+#' @rdname annulized
+#' @export
+Table.Annualized <- function (R, Rf = 0, geometric = TRUE, digits = 4){
+  y = PerformanceAnalytics::checkData(R)
+  p_Nday <- periodicity_Ndays(y)
+  scale <- 365/p_Nday
+  
+  columns = ncol(y)
+  columnnames = colnames(y)
+  
+  for (column in 1:columns) {
+    z = c(Return.annualized(y[, column, drop = FALSE], geometric = geometric), 
+          StdDev.annualized(y[, column, drop = FALSE]), 
+          SharpeRatio.annualized(y[,column, drop = FALSE], Rf = Rf, geometric = geometric))
+    znames = c("Annualized Return",
+               "Annualized StdDev",
+               paste("Annualized Sharpe(Rf=",round(Rf * 100, 1), "%)", sep = ""))
+    if (column == 1) {
+      resultingtable = data.frame(Value = z, row.names = znames)
+    }
+    else {
+      nextcolumn = data.frame(Value = z, row.names = znames)
+      resultingtable = cbind(resultingtable, nextcolumn)
+    }
+  }
+  colnames(resultingtable) = columnnames
+  ans = base::round(resultingtable, digits)
+  return(ans)
 }
 
 
@@ -665,7 +872,7 @@ WealthIndex <- function(rtn,geometric=TRUE){
 #' rtn.summary(rtn)
 rtn.summary <- function(rtn,hitFreq="day",hitSatisfied=0,Rf=0){
   rtn <- as.xts(rtn)   
-  annual <- as.matrix(PerformanceAnalytics::table.AnnualizedReturns(rtn,Rf=Rf))
+  annual <- as.matrix(Table.Annualized(rtn,Rf=Rf))
   rtn.aggr <- aggregate(rtn,as.Date(cut(zoo::index(rtn),hitFreq)),PerformanceAnalytics::Return.cumulative)
   hit <- hitRatio(rtn.aggr,satisfied=hitSatisfied)
   dim(hit) <- c(1, NCOL(rtn))
@@ -734,7 +941,7 @@ rtn.periods <- function(rtn,freq="year",from,to) {
   rownames(table.periods) <- paste(from,to,sep=" ~ ")  
   # ---- overall cumulative rtn and annnualized rtn
   table.overall <- PerformanceAnalytics::Return.cumulative(rtn)
-  table.annual <- PerformanceAnalytics::Return.annualized(rtn)  
+  table.annual <- Return.annualized(rtn)  
   result <- rbind(table.periods,table.overall,table.annual)
   return(result)
 }
@@ -796,7 +1003,7 @@ aggr.rtn <- function(rtn,freq){
   if(is.null(dm)){
     dim(re) <- NULL
   }
-  re <- xts::reclass(re,rtn)
+  # re <- xts::reclass(re,rtn)
   return(re)
 }
 
@@ -833,7 +1040,7 @@ aggr.quote <- function(quote,freq,var="close"){
   if(is.null(dm)){
     dim(re) <- NULL
   }
-  re <- xts::reclass(re,quote)
+  # re <- xts::reclass(re,quote)
   return(re)  
 }
 
@@ -854,7 +1061,7 @@ aggr.quote <- function(quote,freq,var="close"){
 #' rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
 #' rtn <- merge(rtn.long,rtn.short)
 #' re <- rollingPerformance(rtn, width=20, by=5)
-rollingPerformance <- function(rtn,FUN="PerformanceAnalytics::Return.annualized",width=365,by=30,align = "right",...){
+rollingPerformance <- function(rtn,FUN="Return.annualized",width=365,by=30,align = "right",...){
   x = xts::try.xts(rtn)
   columns = ncol(x)
   columnnames = colnames(x)
@@ -1127,9 +1334,9 @@ ggplots.PerformanceSummary2 <- function(rtn,
 #' ggplots.RollingPerformance(rtn)
 ggplots.RollingPerformance <- function(rtn,width=250,by=30,...){
   rtn <- xts::try.xts(rtn)
-  rtn.annu <- rollingPerformance(rtn,FUN="PerformanceAnalytics::Return.annualized",width=width,by=by,...)
-  stdev.annu <- rollingPerformance(rtn,FUN="PerformanceAnalytics::StdDev.annualized",width=width,by=by,...)
-  sharp.annu <- rollingPerformance(rtn,FUN="PerformanceAnalytics::SharpeRatio.annualized",width=width,by=by,...)
+  rtn.annu <- rollingPerformance(rtn,FUN="Return.annualized",width=width,by=by,...)
+  stdev.annu <- rollingPerformance(rtn,FUN="StdDev.annualized",width=width,by=by,...)
+  sharp.annu <- rollingPerformance(rtn,FUN="SharpeRatio.annualized",width=width,by=by,...)
   
   rtn.annu <- na.omit(rtn.annu)
   stdev.annu <- na.omit(stdev.annu)
@@ -1334,6 +1541,9 @@ numericFormatCol <- function(df, percentCols = c(1:ncol(df))){
 
 #' @export
 rdate2int <- function(rdate){
+  if(class(rdate)!="Date"){
+    stop("The rdate is not of class 'Date'!")
+  }
   intdate <- as.integer(as.character(rdate,"%Y%m%d"))
   return(intdate)
 }
@@ -1355,6 +1565,21 @@ QT <- function(x,sym=1){
     y <- paste('"',x,'"',sep="")
   }  
   return(y)
+}
+
+#' bracket a series of string#'
+#'
+#' @author Andrew Dow
+#' @param series is a series object
+#' @return a string object with bracket surrounded the series object.
+#' @examples
+#' series <- c('EQ000001','EQ000002')
+#' brkQT(series)
+#' @export
+brkQT <- function(series){
+  tmp <- paste(series,collapse = "','")
+  tmp <- paste("('",tmp,"')",sep='')
+  return(tmp)
 }
 
 

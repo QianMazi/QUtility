@@ -6,12 +6,17 @@
 \alias{check.TS}
 \alias{check.TSF}
 \alias{check.TSFR}
-\alias{check.TSFR_decay}
 \alias{check.colnames}
 \alias{check.rptTS}
+\alias{is_usualcols}
+\alias{usualcols}
 \title{check.colnames}
 \usage{
 check.colnames(data, coltest)
+
+usualcols()
+
+is_usualcols(cols, usualcols = usualcols())
 
 check.TS(TS)
 
@@ -20,8 +25,6 @@ check.rptTS(rptTS)
 check.TSF(TSF)
 
 check.TSFR(TSFR)
-
-check.TSFR_decay(TSFR)
 
 check.Port(port)
 
