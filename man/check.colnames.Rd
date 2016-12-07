@@ -8,6 +8,7 @@
 \alias{check.TSFR}
 \alias{check.colnames}
 \alias{check.rptTS}
+\alias{guess_factorNames}
 \alias{is_usualcols}
 \alias{usualcols}
 \title{check.colnames}
@@ -17,6 +18,8 @@ check.colnames(data, coltest)
 usualcols()
 
 is_usualcols(cols, usualcols = usualcols())
+
+guess_factorNames(df)
 
 check.TS(TS)
 

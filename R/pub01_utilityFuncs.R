@@ -39,6 +39,13 @@ usualcols <- function(){
 is_usualcols <- function(cols, usualcols=usualcols()){
   re <- cols %in% usualcols | substr(cols,1,6)=="prdrtn"
 }
+#' @rdname check.colnames
+#' @export
+guess_factorNames <- function(df){
+  usual_cols <- is_usualcols(cols = names(df),usualcols = usualcols())
+  factorNames <- names(df)[!usual_cols]
+  return(factorNames)
+}
 
 
 #' @rdname check.colnames
@@ -427,17 +434,17 @@ Return.backtesting <- function(R,
   NCOLs <- ncol(weights) 
   
   # --- check the time windows of R and weights
-  if (as.Date(end(R)) < trday.nearby(as.Date(start(weights)),-1) ) {
-    stop(paste("The last date of return series", as.Date(end(R)),"occurs before beginning of first rebalancing period",  trday.nearby(as.Date(start(weights)),-1) ))
+  if (as.Date(end(R)) < trday.nearby(as.Date(start(weights)),by = 1) ) {
+    stop(paste("The last date of return series", as.Date(end(R)),"occurs before beginning of first rebalancing period",  trday.nearby(as.Date(start(weights)),by = 1) ))
   }
   # if (as.Date(start(R)) < as.Date(zoo::index(weights[1, ]))) {
   #   R <- R[paste0(as.Date(zoo::index(weights[1, ])) + 1, "/")]
   # }
-  # if (as.Date(start(R)) > trday.nearby(as.Date(start(weights)),-1)) {
-  #   warning(paste("Return series start on", as.Date(start(R)), ", which is after the first rebalancing period", trday.nearby(as.Date(start(weights)),-1),". The first rebalancing point will be supposed to",as.Date(start(R))-1))
+  # if (as.Date(start(R)) > trday.nearby(as.Date(start(weights)),1)) {
+  #   warning(paste("Return series start on", as.Date(start(R)), ", which is after the first rebalancing period", trday.nearby(as.Date(start(weights)),1),". The first rebalancing point will be supposed to",as.Date(start(R))-1))
   # }
   if (as.Date(end(R)) < as.Date(end(weights))+1 ) {
-    warning(paste("Return series end on", as.Date(end(R)), ", which is before the last rebalancing period", trday.nearby(as.Date(end(weights)),-1),". The last rebalancing period will be ignored"))
+    warning(paste("Return series end on", as.Date(end(R)), ", which is before the last rebalancing period", trday.nearby(as.Date(end(weights)),by = 1),". The last rebalancing period will be ignored"))
   }  
     
   # --- check the fee data
@@ -1980,7 +1987,7 @@ renameCol <- function (indata, src, tgt) {
 #' eventRtn <- getEventRtn(TS,20)
 getEventRtn <- function(TS,holdingday,bmk="EI000300",fee=0,tradeType=c("close","nextavg","nextopen")){
   check.TS(TS)
-  endT <- trday.nearby(TS$date,by= -holdingday)
+  endT <- trday.nearby(TS$date,by= holdingday)
   if(holdingday>0){
     rtn.event <- getPeriodrtn(stockID=TS$stockID,begT=TS$date,endT=endT,tradeType=tradeType)-fee*2
     rtn.bmk <- getPeriodrtn(stockID=bmk,begT=TS$date,endT=endT,tradeType="close",datasrc='ts')
