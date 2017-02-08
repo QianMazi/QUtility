@@ -36,14 +36,13 @@ usualcols <- function(){
 }
 #' @rdname check.colnames
 #' @export
-is_usualcols <- function(cols, usualcols=usualcols()){
-  re <- cols %in% usualcols | substr(cols,1,6)=="prdrtn"
+is_usualcols <- function(cols){
+  re <- cols %in% usualcols() | substr(cols,1,6)=="prdrtn"
 }
 #' @rdname check.colnames
 #' @export
-guess_factorNames <- function(df){
-  usual_cols <- is_usualcols(cols = names(df),usualcols = usualcols())
-  factorNames <- names(df)[!usual_cols]
+guess_factorNames <- function(df,no_factorname = NULL){
+  factorNames <- names(df)[!is_usualcols(names(df)) & !names(df)%in%no_factorname]
   return(factorNames)
 }
 
@@ -70,7 +69,7 @@ check.TSF <- function(TSF){
 #' @rdname check.colnames
 #' @export
 check.TSFR <- function(TSFR){
-  coltest <- c("date","stockID","factorscore","periodrtn")
+  coltest <- c("date","stockID","factorscore","periodrtn","date_end")
   check.colnames(TSFR,coltest)
 }
 

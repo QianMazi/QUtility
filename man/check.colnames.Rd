@@ -17,9 +17,9 @@ check.colnames(data, coltest)
 
 usualcols()
 
-is_usualcols(cols, usualcols = usualcols())
+is_usualcols(cols)
 
-guess_factorNames(df)
+guess_factorNames(df, no_factorname = NULL)
 
 check.TS(TS)
 
