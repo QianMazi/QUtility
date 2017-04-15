@@ -26,10 +26,9 @@ rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
 rtn <- merge(rtn.long,rtn.short)
 prices <- WealthIndex(rtn)
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link{Returns}},\code{\link[timeSeries]{cumulated}}
 }
-
+\author{
+Ruifei.Yin
+}

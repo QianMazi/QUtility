@@ -9,4 +9,3 @@ QT(x, sym = 1)
 \description{
 Quote a character string
 }
-

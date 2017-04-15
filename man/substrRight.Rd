@@ -12,4 +12,3 @@ substrRight
 \seealso{
 \code{\link{substr}}
 }
-

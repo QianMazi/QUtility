@@ -23,4 +23,3 @@ ls.class(c("function","character"))
 \author{
 Ruifei.Yin
 }
-

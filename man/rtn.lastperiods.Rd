@@ -27,4 +27,3 @@ rtn.lastperiods(rtn,list(months(3),months(6),years(1)))
 \author{
 Ruifei.Yin
 }
-

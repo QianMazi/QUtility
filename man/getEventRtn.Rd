@@ -3,6 +3,7 @@
 \name{getEventRtn}
 \alias{getEventRtn}
 \alias{getEventRtns}
+\alias{getEventRtns}
 \title{getEventRtn}
 \usage{
 getEventRtn(TS, holdingday, bmk = "EI000300", fee = 0,
@@ -39,4 +40,3 @@ eventRtns <- getEventRtns(head(TS,10),c(-10,-5,0,5,10))
 \author{
 Ruifei.Yin
 }
-

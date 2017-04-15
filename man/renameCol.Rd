@@ -27,4 +27,3 @@ CO2 <- data.frame(a=1,b=2)
 renameCol(CO2, 1:2, c("kk","ll"))
 renameCol(CO2, c("a","b"), c("kk","ll"))
 }
-

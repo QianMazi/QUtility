@@ -24,4 +24,3 @@ hit <- hitRatio(rtn,0.02)
 \author{
 Ruifei.Yin
 }
-

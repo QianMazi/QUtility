@@ -36,4 +36,3 @@ z <- data.frame(m1=c(1,5,3),m2=c("a","a","c"))
 vlookup.df(z,table,c("K1","K2"))
 vlookup.df(z,table,c("K1","K2"), exclude.x=FALSE)
 }
-

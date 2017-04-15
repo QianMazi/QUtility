@@ -19,10 +19,9 @@ Is it a proper report date?
 rptDate.is(ymd(c(20100103,20141231,20130630)))
 rptDate.is(ymd(c(20100630,20141231,20130930)))
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link{check.rptDate}}
 }
-
+\author{
+Ruifei.Yin
+}

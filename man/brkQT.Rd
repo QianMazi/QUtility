@@ -22,4 +22,3 @@ brkQT(series)
 \author{
 Andrew Dow
 }
-

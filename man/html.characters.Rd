@@ -21,10 +21,9 @@ This function is a wraped function of the \code{\link[R2HTML]{HTML.character}} f
 .HTML.file <-  file.path(getwd(),"htmlrpt.html")
 html.characters(c("this is the first paragraph.","this is the second paragraph."))
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link[R2HTML]{HTMLInsertGraph}},\code{\link[R2HTML]{HTMLplot}}
 }
-
+\author{
+Ruifei.Yin
+}

@@ -15,4 +15,3 @@ check if a object have names
 \author{
 Ruifei.Yin
 }
-

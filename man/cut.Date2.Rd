@@ -23,4 +23,3 @@ a wrapped function of \code{\link{cut.Date}} by adding a parametr \code{lab.side
 \author{
 Ruifei.Yin
 }
-

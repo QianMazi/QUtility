@@ -28,10 +28,9 @@ rtn <- merge(rtn.long,rtn.short)
 rtn.periods(rtn,"month")
 rtn.periods(rtn,from=c("2010-02-03","2010-03-04"),to=c("2010-03-09","2010-03-30"))
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link[timeSeries]{fapply}}
 }
-
+\author{
+Ruifei.Yin
+}

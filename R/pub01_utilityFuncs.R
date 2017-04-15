@@ -41,8 +41,14 @@ is_usualcols <- function(cols){
 }
 #' @rdname check.colnames
 #' @export
-guess_factorNames <- function(df,no_factorname = NULL){
-  factorNames <- names(df)[!is_usualcols(names(df)) & !names(df)%in%no_factorname]
+#' @examples 
+#' df <- data.frame(a=1,b=2,c=3,date=9,factorscore=0)
+#' guess_factorNames(df,no_factorname = "c",is_factorname = "factorscore")
+guess_factorNames <- function(df,no_factorname = NULL,is_factorname=NULL,silence=FALSE){
+  factorNames <- names(df)[!is_usualcols(names(df)) & !names(df)%in%no_factorname | names(df)%in%is_factorname]
+  if(!silence){
+    cat(paste("The guessed factorNames are: ",paste(factorNames,collapse = ","),".\n",sep = ""))
+  }
   return(factorNames)
 }
 
@@ -84,6 +90,12 @@ check.Port <- function(port){
 check.SP <- function(SP){
   coltest <- c("stockID","begT","endT")
   check.colnames(SP,coltest)
+}
+#' @rdname check.colnames
+#' @export
+check.TSS <- function(TSS){
+  coltest <- c("date","stockID","sector")
+  check.colnames(TSS,coltest)
 }
 
 #' check.name_exist
@@ -610,6 +622,17 @@ periodicity_Ndays <- function(x) {
 }
 
 
+#' scale_esti
+#'
+#' Estimate the scale of a time-series-like object
+#' @return a numeric
+#' @export
+scale_esti <- function(R){
+  re <- 365/periodicity_Ndays(R)
+  return(re)
+}
+
+
 #' annualized functions
 #' 
 #' calculate an annualized return, stddev, turnover.
@@ -617,6 +640,7 @@ periodicity_Ndays <- function(x) {
 #' @name annulized
 #' @aliases Turnover.annualized
 #' @param R a return, stddev, turnover series, an object of class timeSeries,zoo or xts
+#' @param scale number of periods in a year (daily scale = 252, monthly scale = 12, quarterly scale = 4)
 #' @return a vector or scalar depending on the dim of seri
 #' @author Ruifei.Yin
 #' @export
@@ -626,13 +650,11 @@ periodicity_Ndays <- function(x) {
 #' re <- Turnover.annualized(seri)
 #' seri <- zoo(matrix(runif(60,0,1),30,2),seq(Sys.Date(),by="month",length.out=30))
 #' re <- Turnover.annualized(seri)
-Turnover.annualized <- function(R){
+Turnover.annualized <- function(R, scale=scale_esti(R)){
   subFun <- function(x){
     result <- mean(x,na.rm = TRUE) * scale
     return(result)
   }
-  p_Nday <- periodicity_Ndays(R)
-  scale <- 365/p_Nday
   if(is.null(dim(R))){
     re <- subFun(R)
     return(re)
@@ -664,7 +686,9 @@ Turnover.annualized <- function(R){
 #' rtn <- merge(rtn.long,rtn.short)
 #' Return.annualized(rtn) # right
 #' PerformanceAnalytics::Return.annualized(rtn) # wrong!
-Return.annualized <- function (R, geometric = TRUE) {
+#' scale_esti <- 365/periodicity_Ndays(rtn)
+#' PerformanceAnalytics::Return.annualized(rtn,scale = scale_esti) # right
+Return.annualized <- function (R, scale=scale_esti(R),geometric = TRUE) {
   subFun <- function(x, geometric){
     x = na.omit(x)
     if (geometric) {
@@ -675,8 +699,6 @@ Return.annualized <- function (R, geometric = TRUE) {
     }
     result
   }
-  p_Nday <- periodicity_Ndays(R)
-  scale <- 365/p_Nday
   if(is.null(dim(R))){
     re <- subFun(R, geometric)
     return(re)
@@ -687,19 +709,20 @@ Return.annualized <- function (R, geometric = TRUE) {
     rownames(re) = "Annualized Return"
     return(re)
   }
+  
+  # simplyfied :
+  # re <- PerformanceAnalytics::Return.annualized(R = R,scale = scale,geometric = geometric)
+  # return(re)
+  
 }
-
-
 
 #' @rdname annulized
 #' @export
-StdDev.annualized <- function(R){
+StdDev.annualized <- function(R, scale=scale_esti(R)){
   subFun <- function(x){
     result <- sqrt(scale) * sd(x, na.rm = TRUE)
     return(result)
   }
-  p_Nday <- periodicity_Ndays(R)
-  scale <- 365/p_Nday
   if(is.null(dim(R))){
     re <- subFun(R)
     return(re)
@@ -710,18 +733,20 @@ StdDev.annualized <- function(R){
     rownames(re) = "Annualized StdDev"
     return(re)
   }
+  
+  # simplyfied :
+  # re <- PerformanceAnalytics::StdDev.annualized(x = R,scale = scale)
+  # return(re)
 }
 
 
 #' @rdname annulized
 #' @export
-IC.annualized <- function(R){
+IC.annualized <- function(R, scale=scale_esti(R)){
   subFun <- function(x){
     result <- sqrt(scale) * mean(x, na.rm = TRUE)
     return(result)
   }
-  p_Nday <- periodicity_Ndays(R)
-  scale <- 365/p_Nday
   if(is.null(dim(R))){
     re <- subFun(R)
     return(re)
@@ -736,7 +761,7 @@ IC.annualized <- function(R){
 
 #' @rdname annulized
 #' @export
-SharpeRatio.annualized <- function (R, Rf = 0, geometric = TRUE) {
+SharpeRatio.annualized <- function (R, Rf = 0, scale=scale_esti(R), geometric = TRUE) {
   subFun <- function(x, geometric){
     x = na.omit(x)
     if (geometric) {
@@ -749,8 +774,6 @@ SharpeRatio.annualized <- function (R, Rf = 0, geometric = TRUE) {
     result <- (rtn-Rf)/stdev
     return(result)
   }
-  p_Nday <- periodicity_Ndays(R)
-  scale <- 365/p_Nday
   if(is.null(dim(R))){
     re <- subFun(R, geometric)
     return(re)
@@ -767,18 +790,16 @@ SharpeRatio.annualized <- function (R, Rf = 0, geometric = TRUE) {
 
 #' @rdname annulized
 #' @export
-Table.Annualized <- function (R, Rf = 0, geometric = TRUE, digits = 4){
+Table.Annualized <- function (R, scale=scale_esti(R), Rf = 0, geometric = TRUE, digits = 4){
   y = PerformanceAnalytics::checkData(R)
-  p_Nday <- periodicity_Ndays(y)
-  scale <- 365/p_Nday
-  
+
   columns = ncol(y)
   columnnames = colnames(y)
   
   for (column in 1:columns) {
-    z = c(Return.annualized(y[, column, drop = FALSE], geometric = geometric), 
-          StdDev.annualized(y[, column, drop = FALSE]), 
-          SharpeRatio.annualized(y[,column, drop = FALSE], Rf = Rf, geometric = geometric))
+    z = c(Return.annualized(y[, column, drop = FALSE],scale=scale, geometric = geometric), 
+          StdDev.annualized(y[, column, drop = FALSE],scale=scale), 
+          SharpeRatio.annualized(y[,column, drop = FALSE],scale=scale, Rf = Rf, geometric = geometric))
     znames = c("Annualized Return",
                "Annualized StdDev",
                paste("Annualized Sharpe(Rf=",round(Rf * 100, 1), "%)", sep = ""))

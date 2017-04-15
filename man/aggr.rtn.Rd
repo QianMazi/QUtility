@@ -26,4 +26,3 @@ aggr.rtn(rtn,"month")
 \author{
 Ruifei.yin
 }
-

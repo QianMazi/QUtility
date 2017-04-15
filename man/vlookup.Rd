@@ -26,4 +26,3 @@ x <- c(2,4,3)
 table <- data.frame(1:4,LETTERS[1:4])
 vlookup(x,table,by=1,ret=2)
 }
-

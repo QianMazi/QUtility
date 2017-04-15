@@ -28,4 +28,3 @@ ggplot.ts.bar(rtn)
 \author{
 Ruifei.Yin
 }
-

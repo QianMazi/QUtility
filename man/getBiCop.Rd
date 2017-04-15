@@ -40,4 +40,3 @@ x <- rnorm(100)
 df2 <- getBiCop(100,0.2,x=x)
 cor(df2)
 }
-

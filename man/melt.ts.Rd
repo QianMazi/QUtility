@@ -24,4 +24,3 @@ df <- melt.ts(rtn)
 \author{
 Ruifei.Yin
 }
-

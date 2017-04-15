@@ -28,4 +28,3 @@ ggplot.ts.area(rtn)
 \author{
 Ruifei.Yin
 }
-

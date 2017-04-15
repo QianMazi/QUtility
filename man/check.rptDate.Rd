@@ -16,10 +16,9 @@ Is it a proper rptDate object? If TRUE, return NULL; else return an error.
 check.rptDate(ymd(c(20100103,20141231,20130630)))
 check.rptDate(ymd(c(20100630,20141231,20130930)))
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link{rptDate.is}}
 }
-
+\author{
+Ruifei.Yin
+}

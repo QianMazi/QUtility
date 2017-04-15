@@ -31,4 +31,3 @@ lag.df(df,1,TRUE)
 \author{
 Ruifei.yin
 }
-

@@ -35,4 +35,3 @@ re <- rollingPerformance(rtn, width=20, by=5)
 \author{
 Ruifei.Yin
 }
-

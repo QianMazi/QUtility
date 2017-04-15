@@ -29,10 +29,9 @@ rtn.short <- rtn.long + rnorm(100,-0.001,0.003)
 rtn <- merge(rtn.long,rtn.short)
 ggplots.RollingPerformance(rtn)
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link{rollingPerformance}}
 }
-
+\author{
+Ruifei.Yin
+}

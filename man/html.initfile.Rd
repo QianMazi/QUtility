@@ -31,10 +31,9 @@ cssFile <- paste("file:///",file.path(htmlrptDir,cssFile),sep="") # if the css f
 .HTML.file <- file.path(htmlrptDir,htmlrtpFile)
 html.initfile(CSSFile=cssFile,Title="Factor model report")
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link[R2HTML]{HTMLInitFile}}
 }
-
+\author{
+Ruifei.Yin
+}

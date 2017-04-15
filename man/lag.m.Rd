@@ -32,4 +32,3 @@ lag.m(v,-2,TRUE)
 \author{
 Ruifei.yin
 }
-

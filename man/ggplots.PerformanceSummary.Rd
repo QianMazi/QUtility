@@ -38,4 +38,3 @@ ggplots.PerformanceSummary(rtn,var.cum=list(c(1,2),3),var.dd=list(c(1,2)),var.ba
 \author{
 Ruifei.Yin
 }
-

@@ -31,10 +31,9 @@ rtn <- merge(rtn.long,rtn.short)
 prices <- WealthIndex(rtn)
 rtn2 <- Returns(prices,trim=FALSE) # Is rtn2 the same as rtn?
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link{WealthIndex}},\code{\link[timeSeries]{returns}}
 }
-
+\author{
+Ruifei.Yin
+}

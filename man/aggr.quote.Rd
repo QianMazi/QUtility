@@ -32,4 +32,3 @@ aggr.quote(price.close,"month")
 \author{
 Ruifei.yin
 }
-

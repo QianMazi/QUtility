@@ -30,4 +30,3 @@ multiplot_facet(list(p1, p2, p3, p4), ncol=2, scales="free")
 \author{
 Ruifei.Yin
 }
-

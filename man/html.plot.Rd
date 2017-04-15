@@ -28,10 +28,9 @@ This function is a wraped function of the \code{\link[R2HTML]{HTMLInsertGraph}} 
 .HTML.file <-  file.path(getwd(),"htmlrpt.html")
 html.plot(plot(1:5))
 }
-\author{
-Ruifei.Yin
-}
 \seealso{
 \code{\link[R2HTML]{HTMLInsertGraph}},\code{\link[R2HTML]{HTMLplot}}
 }
-
+\author{
+Ruifei.Yin
+}

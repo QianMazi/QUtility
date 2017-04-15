@@ -28,4 +28,3 @@ ggplot.ts.line(rtn)
 \author{
 Ruifei.Yin
 }
-

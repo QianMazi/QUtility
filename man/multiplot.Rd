@@ -32,4 +32,3 @@ multiplot(p1, p2, p3, p4, ncol=2)
 \author{
 Ruifei.Yin
 }
-

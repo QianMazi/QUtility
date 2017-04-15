@@ -12,4 +12,3 @@ findInterval.rightClosed
 \seealso{
 \code{\link{findInterval}}
 }
-

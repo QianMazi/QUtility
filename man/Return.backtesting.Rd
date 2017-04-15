@@ -67,4 +67,3 @@ chart.StackedBar(x$BOP.Value)
 \author{
 Ruifei.yin
 }
-

@@ -18,4 +18,3 @@ Estimate the periodicity of a time-series-like object by calculating the mean ti
 \seealso{
 \link[xts]{periodicity}
 }
-
