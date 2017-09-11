@@ -29,6 +29,7 @@ y <- data.frame(k1=c(2,3,1,5,6),k2=c("b","c","a","f","x"),v1=LETTERS[1:5],v2=LET
 merge.x(x,y)
 merge(x,y)
 merge(x,y,all.x=TRUE)
+dplyr::left_join(x,y)
 }
 \author{
 Ruifei.Yin

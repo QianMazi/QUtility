@@ -114,102 +114,6 @@ check.name_exist <- function(obj){
 
 
 
-# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
-# ====================    rptDate related  functions      ==============
-# ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
-
-#' rptDate.is
-#' 
-#' Is it a proper report date?
-#' @param rptDate a vector of rptDate , with class Date.
-#' @return a logical vector with the same length of rptDate.
-#' @export
-#' @author Ruifei.Yin
-#' @seealso \code{\link{check.rptDate}}
-#' @examples
-#' rptDate.is(ymd(c(20100103,20141231,20130630)))
-#' rptDate.is(ymd(c(20100630,20141231,20130930)))
-rptDate.is <- function(rptDate){
-  md <- 100*lubridate::month(rptDate) + lubridate::day(rptDate)
-  re <- md %in% c(331,630,930,1231)
-  return(re)
-}
-
-#' check.rptDate
-#' 
-#' Is it a proper rptDate object? If TRUE, return NULL; else return an error.
-#' @param rptDate a vector of rptDate , with class Date.
-#' @export
-#' @author Ruifei.Yin
-#' @seealso \code{\link{rptDate.is}}
-#' @examples
-#' check.rptDate(ymd(c(20100103,20141231,20130630)))
-#' check.rptDate(ymd(c(20100630,20141231,20130930)))
-check.rptDate <- function(rptDate){
-  re <- rptDate.is(rptDate)
-  re_all <- all(re)
-  if(!re_all) {
-    warning("rptDate is not proper report date!") 
-    cat("Following is not proper rptDate:\n")
-    print(rptDate[!re])
-  } 
-}
-
-
-#' rptDate.yoy
-#' @param rptDate a vector of rptDate , with class Date.
-#' @return a vector of yoy rptDate.
-#' @export
-#' @author Ruifei.Yin
-#' @examples
-#' rptDate.yoy(lubridate::ymd(c(20100630,20141231,20130930)))
-rptDate.yoy <- function(rptDate){
-  check.rptDate(rptDate)
-  re <- rptDate - lubridate::years(1)
-  re <- as.Date(re,tz="")
-  return(re)
-}
-
-#' rptDate.qoq
-#' @param rptDate a vector of rptDate , with class Date.
-#' @return a vector of qoq rptDate.
-#' @export
-#' @author Ruifei.Yin
-#' @examples
-#' rptDate.qoq(lubridate::ymd(c(20100630,20141231,20130930)))
-rptDate.qoq <- function(rptDate){
-  check.rptDate(rptDate)
-  re <- rptDate %m-% months(3)
-  re <- lubridate::ceiling_date(re,unit="month") - lubridate::days(1)
-  re <- as.Date(re,tz="")
-  return(re)
-}
-
-#' rptDate.deadline
-#' return the deadline of rptDate.
-#' @param rptDate a vector of rptDate, with class Date.
-#' @return a vector of Date
-#' @export
-#' @author Ruifei.Yin
-#' @examples
-#' rptDate.deadline(ymd(c(20100630,20141231,20130930)))
-rptDate.deadline <- function(rptDate){
-  check.rptDate(rptDate)
-  q <- lubridate::quarter(rptDate)
-  y <- lubridate::year(rptDate)  
-  re <- ISOdate(y,4,30,tz="")
-  re[q==2] <- ISOdate(y[q==2], 8, 31, tz="")
-  re[q==3] <- ISOdate(y[q==3], 10, 31, tz="")
-  re[q==4] <- ISOdate(y[q==4]+1, 4, 30, tz="")
-  re <- as.Date(re,tz="")
-  return(re)
-}
-
-
-rptDate.publ <- function(rptDate,stockID){
-  
-}
-
 
 
 # ===================== xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ==============
@@ -1501,6 +1405,46 @@ ggplot.ts.bar <- function(ts,main = NULL,...){
     theme(legend.title=element_blank())  
 }
 
+
+
+#' ggplot.corplot
+#' 
+#' @param corr is correlation matrix or a list of correlation matrix ,see \code{\link[stats]{cor}}.
+#' 
+#' @export
+ggplot.corr <- function(corr) {
+  
+  subfun <- function(corr){
+    corr <- round(corr,digits = 2)
+    corr[upper.tri(corr)] <- NA
+    corr <- reshape2::melt(corr, na.rm = TRUE)
+    colnames(corr) <- c("fname","fnamecor",'value')
+    return(corr)
+  }
+  
+  if(is.matrix(corr)){
+    cordf <- subfun(corr)
+    ggplot(data=cordf,aes(fname,fnamecor,fill=value))+geom_tile()+
+      scale_fill_gradient2(low = "blue", high = "red", mid = "white")+
+      geom_text(aes(fname,fnamecor, label = value), color = "black")+
+      theme(axis.text.x = element_text(angle = 45,vjust = 1, hjust = 1))
+    
+  }else{
+    N <- floor(sqrt(length(corr)))
+    cordf <- plyr::ldply(corr,subfun,.id = 'date')
+    
+    ggplot(data=cordf,aes(fname,fnamecor,fill=value))+geom_tile()+
+      scale_fill_gradient2(low = "blue", high = "red", mid = "white")+
+      geom_text(aes(fname,fnamecor, label = value), color = "black")+facet_wrap(~ date,ncol=N)+
+      theme(axis.text.x = element_text(angle = 45,vjust = 1, hjust = 1))
+    
+  }
+  
+}
+
+
+
+
 #' melt.ts
 #' 
 #' melt the multi-columns timeseries to single-column dataframe for easy ggploting. 
@@ -1683,15 +1627,18 @@ vlookup.df <- function(x, table, by=colnames(x), ret=setdiff(colnames(table),by)
 #' merge.x(x,y)
 #' merge(x,y)
 #' merge(x,y,all.x=TRUE)
+#' dplyr::left_join(x,y)
 merge.x <- function(x, y, by = intersect(colnames(x),colnames(y)), mult="all"){
   if("PK_" %in% colnames(x)) stop ("Name conflict!")
+  cols_x <- colnames(x)
+  cols_y <- colnames(y)
   x$PK_ <- 1:NROW(x)
   x <- data.table::data.table(x,key=by)
   y <- data.table::data.table(y,key=by)
   re <- y[x, mult=mult]
   re <- as.data.frame(re)
   re <- dplyr::arrange(re,PK_)
-  re$PK_ <- NULL
+  re <- dplyr::select(re,dplyr::one_of(c(cols_x,setdiff(cols_y,by))))
   return(re)
 }
 

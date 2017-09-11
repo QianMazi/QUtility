@@ -11,6 +11,7 @@
 \alias{check.TSFR}
 \alias{check.Port}
 \alias{check.SP}
+\alias{check.TSS}
 \title{check.colnames}
 \usage{
 check.colnames(data, coltest)
@@ -19,7 +20,8 @@ usualcols()
 
 is_usualcols(cols)
 
-guess_factorNames(df, no_factorname = NULL, is_factorname = NULL)
+guess_factorNames(df, no_factorname = NULL, is_factorname = NULL,
+  silence = FALSE)
 
 check.TS(TS)
 
@@ -32,6 +34,8 @@ check.TSFR(TSFR)
 check.Port(port)
 
 check.SP(SP)
+
+check.TSS(TSS)
 }
 \arguments{
 \item{data}{a dataframe or matrix,with some colnames}
